@@ -1,0 +1,37 @@
+name: Build CarlinhoOS ISO
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y nasm xorriso make qemu-system-x86
+
+    - name: Compile OS and Generate ISO
+      run: |
+        make
+
+    - name: Validate Boot with QEMU 
+      run: |
+        qemu-system-x86_64 -cdrom build/carlinhoos.iso -display none -no-reboot -no-shutdown &
+        QEMU_PID=$!
+        sleep 5
+        kill $QEMU_PID || true
+
+    - name: Upload ISO Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: carlinhoos-iso
+        path: build/carlinhoos.iso
